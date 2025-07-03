@@ -1,0 +1,323 @@
+# ---------------- CONFIGMAP & SECRETS ----------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lago-config
+data:
+  POSTGRES_DB: lago
+  POSTGRES_USER: lago
+  POSTGRES_HOST: lago-postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_SCHEMA: public
+  REDIS_HOST: lago-redis
+  REDIS_PORT: "6379"
+  API_PORT: "3000"
+  FRONT_PORT: "80"
+  RAILS_ENV: production
+  RAILS_LOG_TO_STDOUT: "true"
+  LAGO_API_URL: http://lago.local/api
+  LAGO_FRONT_URL: http://lago.local
+  APP_ENV: production
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: lago-secrets
+type: Opaque
+stringData:
+  POSTGRES_PASSWORD: changeme
+  SECRET_KEY_BASE: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+  LAGO_ENCRYPTION_PRIMARY_KEY: abcdef1234567890abcdef1234567890
+  LAGO_ENCRYPTION_DETERMINISTIC_KEY: 1234567890abcdef1234567890abcdef
+  LAGO_ENCRYPTION_KEY_DERIVATION_SALT: salt123456
+
+---
+# ---------------- POSTGRES ----------------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lago-postgres-pvc
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lago-postgres
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: lago-postgres
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lago-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lago-postgres
+  template:
+    metadata:
+      labels:
+        app: lago-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:14-alpine
+        envFrom:
+          - configMapRef:
+              name: lago-config
+          - secretRef:
+              name: lago-secrets
+        volumeMounts:
+          - name: postgres-storage
+            mountPath: /var/lib/postgresql/data
+        ports:
+          - containerPort: 5432
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: lago-postgres-pvc
+
+---
+# ---------------- REDIS ----------------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lago-redis-pvc
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lago-redis
+spec:
+  ports:
+    - port: 6379
+  selector:
+    app: lago-redis
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lago-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lago-redis
+  template:
+    metadata:
+      labels:
+        app: lago-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:6-alpine
+        command: ["redis-server", "--port", "6379"]
+        volumeMounts:
+          - name: redis-storage
+            mountPath: /data
+        ports:
+          - containerPort: 6379
+      volumes:
+        - name: redis-storage
+          persistentVolumeClaim:
+            claimName: lago-redis-pvc
+
+---
+# ---------------- API ----------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: lago-api
+spec:
+  ports:
+    - port: 3000
+  selector:
+    app: lago-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lago-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lago-api
+  template:
+    metadata:
+      labels:
+        app: lago-api
+    spec:
+      containers:
+      - name: api
+        image: getlago/api:v1.31.0
+        command: ["./scripts/start.api.sh"]
+        envFrom:
+          - configMapRef:
+              name: lago-config
+          - secretRef:
+              name: lago-secrets
+        ports:
+          - containerPort: 3000
+
+---
+# ---------------- WORKER ----------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lago-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lago-worker
+  template:
+    metadata:
+      labels:
+        app: lago-worker
+    spec:
+      containers:
+      - name: worker
+        image: getlago/api:v1.31.0
+        command: ["./scripts/start.worker.sh"]
+        envFrom:
+          - configMapRef:
+              name: lago-config
+          - secretRef:
+              name: lago-secrets
+
+---
+# ---------------- CLOCK ----------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lago-clock
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lago-clock
+  template:
+    metadata:
+      labels:
+        app: lago-clock
+    spec:
+      containers:
+      - name: clock
+        image: getlago/api:v1.31.0
+        command: ["./scripts/start.clock.sh"]
+        envFrom:
+          - configMapRef:
+              name: lago-config
+          - secretRef:
+              name: lago-secrets
+
+---
+# ---------------- PDF ----------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: lago-pdf
+spec:
+  ports:
+    - port: 3000
+  selector:
+    app: lago-pdf
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lago-pdf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lago-pdf
+  template:
+    metadata:
+      labels:
+        app: lago-pdf
+    spec:
+      containers:
+      - name: pdf
+        image: getlago/lago-gotenberg:7.8.2
+        ports:
+          - containerPort: 3000
+
+---
+# ---------------- FRONTEND ----------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: lago-front
+spec:
+  ports:
+    - port: 80
+  selector:
+    app: lago-front
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lago-front
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lago-front
+  template:
+    metadata:
+      labels:
+        app: lago-front
+    spec:
+      containers:
+      - name: front
+        image: getlago/front:v1.31.0
+        envFrom:
+          - configMapRef:
+              name: lago-config
+        ports:
+          - containerPort: 80
+
+---
+# ---------------- INGRESS ----------------
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lago-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: lago.local
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: lago-front
+              port:
+                number: 80
+        - path: /api
+          pathType: Prefix
+          backend:
+            service:
+              name: lago-api
+              port:
+                number: 3000
+
+
