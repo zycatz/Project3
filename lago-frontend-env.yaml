@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lago-frontend-env
+data:
+  API_URL: "http://lago.local/api"
+  LAGO_DOMAIN: "lago.local"
+  APP_ENV: "production"
+  LAGO_OAUTH_PROXY_URL: ""
+  LAGO_DISABLE_SIGNUP: ""
+  NANGO_PUBLIC_KEY: ""
+  SENTRY_DSN: ""
+  LAGO_DISABLE_PDF_GENERATION: ""
+
