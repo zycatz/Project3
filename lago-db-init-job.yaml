@@ -1,0 +1,85 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: lago-db-init
+  labels:
+    app: lago-db-init
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: db-init
+        image: getlago/api:v1.31.0
+        command: 
+          - /bin/bash
+          - -c
+          - |
+            echo "Starting database initialization..."
+            
+            # Wait for postgres to be ready
+            until nc -z lago-postgres 5432; do
+              echo "Waiting for postgres..."
+              sleep 2
+            done
+            
+            echo "Postgres is ready, starting database setup..."
+            
+            # Create database if it doesn't exist
+            bin/rails db:create || echo "Database already exists"
+            
+            # Run migrations
+            bin/rails db:migrate
+            
+            # Seed database with initial data
+            bin/rails db:seed
+            
+            echo "Database initialization completed successfully!"
+        envFrom:
+          - configMapRef:
+              name: lago-config
+          - secretRef:
+              name: lago-secrets
+        env:
+          - name: RAILS_ENV
+            value: "production"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: lago-db-reset
+  labels:
+    app: lago-db-reset
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: db-reset
+        image: getlago/api:v1.31.0
+        command: 
+          - /bin/bash
+          - -c
+          - |
+            echo "Starting database reset..."
+            
+            # Wait for postgres to be ready
+            until nc -z lago-postgres 5432; do
+              echo "Waiting for postgres..."
+              sleep 2
+            done
+            
+            echo "Postgres is ready, resetting database..."
+            
+            # Drop and recreate database
+            bin/rails db:drop db:create db:migrate db:seed
+            
+            echo "Database reset completed successfully!"
+        envFrom:
+          - configMapRef:
+              name: lago-config
+          - secretRef:
+              name: lago-secrets
+        env:
+          - name: RAILS_ENV
+            value: "production"
