@@ -36,7 +36,7 @@ Save .env
 
 Make sure Gemfile has the necessary gems (annotaterb, etc.)
 
-> sudo apt install bundler
+	> sudo apt install bundler
 
 Bundler make this easy
 
