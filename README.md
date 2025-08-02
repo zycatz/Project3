@@ -27,8 +27,8 @@ Go into .env folder and add the path to external postgres database
 
  Add 
  
-	>POSTGRES_HOST=(IP)3.22.xxxxx
- 	 POSTGRES_PORT=5432
+	POSTGRES_HOST=(IP)3.22.xxxxx
+ 	POSTGRES_PORT=5432
   	POSTGRES_USER=lago
   	POSTGRES_PASSWORD=YourStrongPassword
   	POSTGRES_DB=lago
