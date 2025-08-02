@@ -10,15 +10,19 @@ One line command works for local etup, but it is hard to connect to external db
 Using advanced commands
 
 Make a directory to clone lago into
+
 	> git clone https://github.com/getlago/lago.git
  
 Go to lago folder
+
 	>cd lago
  
 Create .env document with a Lago private key
+
 	>echo "LAGO_RSA_PRIVATE_KEY=\"`openssl genrsa 2048 | base64 | tr -d '\n'`\"" >> .env
 
 Go into .env folder and add the path to external postgres database
+
 	>nano .env
 
  Add 
