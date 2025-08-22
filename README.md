@@ -103,6 +103,44 @@ Make sure Gemfile has the necessary gems (annotaterb, etc.)
 
 	> sudo apt install bundler
 
-Bundler make this easy
+**Gems**
+
+Gems are bundles of Ruby (the langauge) that certain deployments may need to run.
+
+Use Bundler to install gems directly, or add gems to a Gemfile so that it can be installed when the build goes up
+
+
+	>source "https://rubygems.org"
+	>git_source(:github) { |repo| "https://github.com/#{repo}.git" }
+
+	>ruby <ruby version x.x.x>
+
+  	>group <group> (optional)
+	>gem '<gem>'
+ 	>end (if used group)
+
+^ The contents of a Gemfile
+
+Using 
+
+	>sudo bundle install
+
+Will install the Gems listed in the Gemfile
+
+Gems are also used in Dockerfiles an will be active once you try to deploy containers
+
+You can do this by putting them into RUN or CMD command inside a Dockerfile.
+
+^this is whats giving me trouble since I cannot locate where annotate_rb is and why its stopping the lago_api container from running
+
+*tried*
+Changing dockerfile
+updating ruby (probably did not work since it depends on container version and not host version)
+making a lib/tasks folder to not require annotate
+looking through docker-compose.yml
+adding all dependencies
+adding annotate_rb mannually
+adding gems similar in name to annotate_rb
+
 
 (still trying to debug gems)
