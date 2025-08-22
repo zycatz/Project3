@@ -1,5 +1,35 @@
 # Project3
 
+**Docker**
+
+Docker is a service that lets you not worry about the environment that you set up containers in.
+
+It builds an environment based on a Dockerfile that you provide (or get from someone to run their program on) so that compatability issues dont occur.
+
+Dockerfiles provide information for Docker to build envronments and they usually include things like 
+
+	FROM <image> - includes the image that the build extends on
+ 	WORKDIR <path> - specifies the place that the commands will be copied to and ran
+  	COPY <host-path> <image-path> - tells the builder to copy files from the host and puts them in the image path
+   	RUN <commands> - tells the builder to run a command
+	ENV <name> <value> - sets a environment variable for the container to use
+ 	EXPOSE <port-number> - exposes a port
+  	USER <user-or-uid> - sets user
+   	CMD ["<command>", "<arg1>"] - the default command a container using this image will run
+
+Docker compose, usually in a YML file is used to define and run multi-container applications, like for Lago.
+
+**Kubernetes**
+
+Kubernetes is used to manage containers to bundle and run applications
+
+It can expose ports and manage traffic to different containers in order to keep the deployment stable
+
+Automatically rolls out and maintains containers so that you can have your wanted amount at all times 
+	If a container fails, it recreates it if it goes out and kills it if it doesnt respond
+
+ You can launch a application through Docker and Kubernetes can help in hosting it or keep it up and healthy
+
 **Using Docker for Lago**
 
 *Postgres*
